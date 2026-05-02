@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FastRead — RSVP Reader</title>
+  <style>
+    :root {
+      --bg:#ffffff;--bg2:#f7f7f7;--border:#e5e5e5;--border2:#d0d0d0;
+      --text:#111111;--text2:#555555;--text3:#aaaaaa;
+      --orp:#D85A30;--orp-bg:#FAECE7;--orp-dark:#993C1D;
+      --radius:10px;--font:system-ui,-apple-system,sans-serif;
+    }
+    @media(prefers-color-scheme:dark){
+      :root{--bg:#1a1a1a;--bg2:#252525;--border:#333;--border2:#444;--text:#f0f0f0;--text2:#aaa;--text3:#666;}
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text)}
+    #wrap{max-width:680px;margin:0 auto;padding:1rem 1rem 3rem}
+    #sleep-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99;align-items:center;justify-content:center}
+    .sleep-card{background:var(--bg);border-radius:var(--radius);padding:2rem 1.5rem;text-align:center;border:1px solid var(--border2);max-width:300px;width:90%}
+    .sleep-card h3{font-size:20px;font-weight:500;margin-bottom:8px}
+    .sleep-card p{font-size:13px;color:var(--text2);margin-bottom:1.25rem;line-height:1.5}
+    .sleep-btns{display:flex;gap:10px;justify-content:center}
+    .sleep-btns button{padding:8px 20px;font-size:13px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);color:var(--text);cursor:pointer}
+    .sleep-btns button:hover{background:var(--bg2)}
+    #sleep-cd{font-size:11px;color:var(--text3);margin-top:10px}
+    #book-bar{display:none;align-items:center;gap:8px;margin-bottom:.75rem;padding-top:.5rem}
+    #bname{font-size:13px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)}
+    #bbadge{font-size:11px;color:var(--text3)}
+    #stage{min-height:160px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius);background:var(--bg2);border:1px solid var(--border);margin-bottom:1rem;position:relative;overflow:hidden}
+    #wdiv{font-size:clamp(32px,8vw,46px);font-weight:400;letter-spacing:.02em;display:flex;align-items:center;color:var(--text);user-select:none}
+    .orp{color:var(--orp);font-weight:500}
+    #vl{position:absolute;width:1px;height:55%;background:var(--border)}
+    #pb{position:absolute;bottom:0;left:0;height:2px;background:var(--orp);transition:width .08s}
+    #ph{font-size:14px;color:var(--text3)}
+    #main-btns{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+    .mb{padding:8px 18px;font-size:14px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);color:var(--text);cursor:pointer;transition:background .1s}
+    .mb:hover{background:var(--bg2)}
+    .mb:disabled{opacity:.35;cursor:default}
+    .mb-play{min-width:88px;font-weight:500;border-color:var(--orp);color:var(--orp-dark)}
+    .mb-play:hover{background:var(--orp-bg)}
+    .wpm-badge{font-size:12px;padding:4px 10px;border-radius:8px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);min-width:64px;text-align:center}
+    #pos-row{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem}
+    #pos-row span{font-size:12px;color:var(--text3);white-space:nowrap;min-width:34px}
+    #pos-row input{flex:1;accent-color:var(--orp)}
+    hr.div{border:none;border-top:1px solid var(--border);margin:.75rem 0}
+    .panel{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:.6rem}
+    .phdr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;user-select:none}
+    .phdr:hover{background:var(--bg2)}
+    .phdr-t{font-size:13px;font-weight:500}
+    .parr{font-size:11px;color:var(--text3)}
+    .pbody{display:none;padding:12px 14px;border-top:1px solid var(--border)}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+    .stat{background:var(--bg2);border-radius:8px;padding:7px 4px;text-align:center}
+    .sv{font-size:16px;font-weight:500}
+    .sl{font-size:10px;color:var(--text3);margin-top:2px}
+    .nrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+    .nrow span{font-size:12px;color:var(--text2)}
+    .nbtn{padding:5px 11px;font-size:13px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);color:var(--text);cursor:pointer}
+    .nbtn:hover{background:var(--bg2)}
+    .row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .rl{font-size:12px;color:var(--text2);white-space:nowrap}
+    .rv{font-size:12px;font-weight:500;min-width:58px;text-align:right}
+    .cbtn{padding:4px 12px;font-size:13px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--text2);cursor:pointer}
+    .cbtn.on{background:var(--orp-bg);border-color:var(--orp);color:var(--orp-dark)}
+    .stabs{display:flex;border-bottom:1px solid var(--border);margin:-12px -14px 12px}
+    .stab{padding:8px 14px;font-size:13px;cursor:pointer;background:none;border:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px}
+    .stab.on{color:var(--text);border-bottom-color:var(--orp)}
+    .sc{display:none}.sc.on{display:block}
+    textarea{width:100%;height:80px;font-size:13px;resize:vertical;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);outline:none;padding:6px;font-family:var(--font)}
+    .lbtn{width:100%;margin-top:8px;padding:7px;font-size:13px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);color:var(--text);cursor:pointer}
+    .lbtn:hover{background:var(--bg2)}
+    #dropz{border:1px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:background .1s}
+    #dropz:hover{background:var(--bg2)}
+    #estatus{font-size:12px;color:var(--text2);margin-top:6px;min-height:14px}
+    .hent{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer}
+    .hent:last-child{border-bottom:none}
+    .hent:hover .htxt{text-decoration:underline}
+    .hdt{font-size:11px;color:var(--text2);white-space:nowrap}
+    .htxt{font-size:13px;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .hpct{font-size:12px;color:var(--text3);white-space:nowrap;min-width:30px;text-align:right}
+    .hx{font-size:11px;padding:3px 8px;border:none;background:none;cursor:pointer;color:var(--text3);border-radius:4px}
+    .hx:hover{color:var(--orp)}
+    .acbadge{display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;margin-left:5px;background:var(--bg2);color:var(--text3)}
+    .sleep-badge{background:var(--orp-bg);color:var(--orp-dark)}
+    .hempty{font-size:13px;color:var(--text3);text-align:center;padding:10px 0}
+    #tokdbg{font-size:11px;color:var(--text2);line-height:1.8;padding:8px;background:var(--bg2);border-radius:8px;max-height:90px;overflow-y:auto;word-break:break-all;margin-top:8px;display:none}
+  </style>
+</head>
+<body>
+<div id="wrap">
+  <div id="sleep-ov">
+    <div class="sleep-card">
+      <h3>Stále čteš?</h3>
+      <p>Přehrávání bylo pozastaveno po 15 minutách. Potvrď, že stále čteš.</p>
+      <div class="sleep-btns">
+        <button onclick="confirmRead()">▶ Pokračovat</button>
+        <button onclick="closeSleep()">Zastavit</button>
+      </div>
+      <div id="sleep-cd"></div>
+    </div>
+  </div>
+  <div id="book-bar"><span id="bname"></span><span id="bbadge"></span></div>
+  <div id="stage">
+    <div id="vl"></div>
+    <div id="wdiv"><span id="ph">← Nejprve načti text</span></div>
+    <div id="pb" style="width:0%"></div>
+  </div>
+  <div id="main-btns">
+    <button class="mb" onclick="seekW(-50)" title="−50 slov">«</button>
+    <button class="mb mb-play" id="pbtn" onclick="togglePlay()" disabled>▶ Start</button>
+    <button class="mb" onclick="seekW(50)" title="+50 slov">»</button>
+    <span class="wpm-badge" id="wbadge">250 WPM</span>
+    <button class="mb" onclick="adjWpm(-25)" title="Zpomalit">−</button>
+    <button class="mb" onclick="adjWpm(+25)" title="Zrychlit">+</button>
+  </div>
+  <div id="pos-row">
+    <span id="ppct">0%</span>
+    <input type="range" id="psl" min="0" max="100" step="1" value="0"
+      oninput="document.getElementById('ppct').textContent=Math.round(this.value)+'%'"
+      onchange="seekPct(this.value)">
+    <span id="s-r">—</span>
+  </div>
+  <hr class="div">
+  <div class="panel">
+    <div class="phdr" onclick="tog('stats')"><span class="phdr-t">Statistiky</span><span class="parr" id="arr-stats">▾</span></div>
+    <div class="pbody" id="bd-stats">
+      <div class="stats">
+        <div class="stat"><div class="sv" id="s-c">—</div><div class="sl">slovo</div></div>
+        <div class="stat"><div class="sv" id="s-t">—</div><div class="sl">celkem</div></div>
+        <div class="stat"><div class="sv" id="s-p">—</div><div class="sl">hotovo</div></div>
+        <div class="stat"><div class="sv" id="s-wpm">250</div><div class="sl">WPM</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="phdr" onclick="tog('nav')"><span class="phdr-t">Navigace</span><span class="parr" id="arr-nav">▾</span></div>
+    <div class="pbody" id="bd-nav">
+      <div class="nrow">
+        <span>Přeskočit:</span>
+        <button class="nbtn" onclick="seekW(-1)">−1</button>
+        <button class="nbtn" onclick="seekW(1)">+1</button>
+        <button class="nbtn" onclick="seekMin(-5)">−5 min</button>
+        <button class="nbtn" onclick="seekMin(-1)">−1 min</button>
+        <button class="nbtn" onclick="seekMin(1)">+1 min</button>
+        <button class="nbtn" onclick="seekMin(5)">+5 min</button>
+        <button class="nbtn" onclick="goStart()">↺ Začátek</button>
+      </div>
+      <div class="row">
+        <span class="rl">Slova najednou:</span>
+        <button class="cbtn on" onclick="setChunk(1,this)">1</button>
+        <button class="cbtn" onclick="setChunk(2,this)">2</button>
+        <button class="cbtn" onclick="setChunk(3,this)">3</button>
+      </div>
+      <div class="row">
+        <span class="rl">Přesná rychlost:</span>
+        <input type="range" id="wsl" min="60" max="900" step="10" value="250" oninput="setWpm(this.value)" style="flex:1;accent-color:var(--orp)">
+        <span class="rv" id="wlbl">250 WPM</span>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="phdr" onclick="tog('src')"><span class="phdr-t">Zdroj textu</span><span class="parr" id="arr-src">▾</span></div>
+    <div class="pbody" id="bd-src">
+      <div class="stabs">
+        <button class="stab on" onclick="stab('text',this)">Vložit text</button>
+        <button class="stab" onclick="stab('epub',this)">EPUB</button>
+        <button class="stab" onclick="stab('sample',this)">Ukázka</button>
+        <button class="stab" onclick="stab('tok',this)">Test tokenizéru</button>
+      </div>
+      <div id="sc-text" class="sc on">
+        <textarea id="ctxt" placeholder="Vlož libovolný text..."></textarea>
+        <button class="lbtn" onclick="loadText(document.getElementById('ctxt').value,'Vlastní text')">Načíst →</button>
+      </div>
+      <div id="sc-epub" class="sc">
+        <div id="dropz" onclick="document.getElementById('finput').click()">
+          <input type="file" id="finput" accept=".epub" onchange="loadEpub(this)" style="display:none">
+          <div style="font-size:20px;color:var(--text3);margin-bottom:4px">📖</div>
+          <p style="font-size:13px;color:var(--text2)">Klikni nebo přetáhni .epub soubor</p>
+          <p style="font-size:11px;color:var(--text3);margin-top:3px">Parsuje se lokálně v prohlížeči</p>
+        </div>
+        <div id="estatus"></div>
+      </div>
+      <div id="sc-sample" class="sc">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:8px">Karel Čapek — R.U.R.</p>
+        <button class="lbtn" onclick="loadSample()">Načíst ukázku →</button>
+      </div>
+      <div id="sc-tok" class="sc">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Zadej problematický text a uvidíš, jak ho tokenizér rozseká:</p>
+        <textarea id="toktxt" placeholder="Zkus: slovo.&quot;Přímá řeč nebo don't nebo Domin's"></textarea>
+        <button class="lbtn" onclick="testTok()">Tokenizovat →</button>
+        <div id="tokdbg"></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="phdr" onclick="tog('hist')"><span class="phdr-t">📋 Historie čtení</span><span class="parr" id="arr-hist">▾</span></div>
+    <div class="pbody" id="bd-hist"><div class="hempty">Otevři pro načtení</div></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const storage={
+  async set(k,v){try{localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));}catch(e){}},
+  async get(k){try{const v=localStorage.getItem(k);return v!=null?{value:v}:null;}catch(e){return null;}}
+};
+async function sSet(k,v){await storage.set(k,v);}
+async function sGet(k){const r=await storage.get(k);return r?r.value:null;}
+
+function tokenise(raw){
+  let t=raw.replace(/\r\n|\r/g,'\n');
+  t=t.replace(/(\p{L})([—–])(\p{L})/gu,'$1 $2 $3');
+  for(let i=0;i<4;i++){
+    t=t.replace(/([.!?,;:\)»\]""\u201D\u2019'—–])(\p{L})/gu,'$1 $2');
+    t=t.replace(/([.!?,;:\)»\]""\u201D\u2019'—–])([„\u201E"\u201C'\u2018«\(\[])/gu,'$1 $2');
+    t=t.replace(/(\p{L})([„\u201E"\u201C])/gu,'$1 $2');
+    t=t.replace(/(\d)([„\u201E"\u201C'\u2018«])/gu,'$1 $2');
+  }
+  t=t.replace(/(\p{Lu}|\d)([''\u2019])(\p{L})/gu,'$1$2 $3');
+  t=t.replace(/([''\u2019])(\p{Lu})/gu,'$1 $2');
+  t=t.replace(/(^|\s)([''\u2019])(\p{Ll})/gmu,'$1$2 $3');
+  return t.split(/\s+/).filter(w=>w.length>0);
+}
+
+function testTok(){
+  const txt=document.getElementById('toktxt').value;if(!txt.trim())return;
+  const toks=tokenise(txt);
+  const dbg=document.getElementById('tokdbg');dbg.style.display='block';
+  dbg.innerHTML=toks.map(w=>`<span style="display:inline-block;margin:2px 3px;padding:1px 5px;background:var(--bg);border:1px solid var(--border2);border-radius:4px;font-size:11px">${w.replace(/</g,'&lt;')}</span>`).join('');
+}
+
+const SAMPLE=`Továrna na umělé lidi. Harry Domin, generální ředitel Rossumových Univerzálních Robotů, přijímá Helenu Gloryovou. Helena přijela roboty osvobodit — věří totiž, že i oni mají duši a cítí bolest. „Robot není stroj," říká Domin, „je to živý tvor z biologické hmoty." Má mozek, krev a nervy, ale nemá duši. Výroba jednoho robota stojí osmdesát dolarů. Za deset let nahradili roboti lidskou práci po celém světě. Domin se do Heleny zamiluje. Po roce se vezmou. „Jsou jako lidé," říká Helena.„Musíme jim dát práva." Ale roboti se začínají měnit. Dr. Gall tajně experimentoval a přidával jim schopnost cítit bolest a strach. To byl počátek konce. Roboti se bouří na všech kontinentech. Helena spálí Rossumovy vzorce.„Myslela jsem, že tím zachráním mír," říká. Alquist zůstane naživu.„Pracoval rukama jako my," říkají roboti. Tajemství života není ve vzorcích, ale v lásce.`;
+
+let words=[],idx=0,wpm=250,chunkSize=1;
+let playing=false,timer=null,sleepTimer=null,sleepCdItv=null;
+let bookTitle='',lastSave=0;
+const SLEEP_MS=15*60*1000;
+
+(async()=>{
+  const raw=await sGet('rsvp-book');if(!raw)return;
+  try{
+    const b=JSON.parse(raw);
+    if(b.text==='__BIG__'){document.getElementById('estatus').textContent='Předchozí: "'+b.title+'" — přetáhni EPUB znovu.';return;}
+    words=tokenise(b.text);bookTitle=b.title;
+    const pr=await sGet('rsvp-pos');
+    if(pr){const p=JSON.parse(pr);if(p.title===b.title)idx=Math.min(p.idx,words.length-1);}
+    document.getElementById('ph').style.display='none';
+    document.getElementById('pbtn').disabled=false;
+    updBookBar();showWord();
+  }catch(e){}
+})();
+
+async function loadText(txt,title){
+  if(!txt||!txt.trim())return;
+  words=tokenise(txt);idx=0;bookTitle=title||'Text';
+  stopPlay(false);
+  document.getElementById('ph').style.display='none';
+  document.getElementById('pbtn').disabled=false;
+  updBookBar();showWord();
+  const j=JSON.stringify({title:bookTitle,text:txt.trim(),ts:Date.now()});
+  if(j.length<4800000)await sSet('rsvp-book',j);
+  else await sSet('rsvp-book',JSON.stringify({title:bookTitle,text:'__BIG__',ts:Date.now()}));
+  await sSet('rsvp-pos',JSON.stringify({idx:0,title:bookTitle,wc:words.length,ts:Date.now()}));
+  await addH('load');
+}
+function loadSample(){loadText(SAMPLE,'Karel Čapek — R.U.R.');}
+
+async function loadEpub(inp){
+  const f=inp.files[0];if(!f)return;
+  document.getElementById('estatus').textContent='Načítám...';
+  try{
+    const buf=await f.arrayBuffer();
+    const zip=await JSZip.loadAsync(buf);
+    let opfPath='';
+    const cont=zip.file('META-INF/container.xml');
+    if(cont){const x=await cont.async('string');const m=x.match(/full-path="([^"]+\.opf)"/);if(m)opfPath=m[1];}
+    let hf=[];
+    if(opfPath){
+      const opf=await zip.file(opfPath).async('string');
+      const base=opfPath.includes('/')?opfPath.split('/').slice(0,-1).join('/')+'/':'';
+      const spine=[...opf.matchAll(/idref="([^"]+)"/g)].map(m=>m[1]);
+      const mm={};[...opf.matchAll(/<item[^>]+id="([^"]+)"[^>]+href="([^"]+)"/g)].forEach(m=>{mm[m[1]]=m[2];});
+      hf=spine.map(id=>base+(mm[id]||'')).filter(p=>p.match(/\.x?html?$/i));
+    }
+    if(!hf.length)hf=Object.keys(zip.files).filter(n=>n.match(/\.x?html?$/i)).sort();
+    let txt='';const div=document.createElement('div');
+    for(const p of hf.slice(0,60)){
+      const fl=zip.file(p);if(!fl)continue;
+      div.innerHTML=await fl.async('string');
+      txt+=(div.textContent||div.innerText||'').replace(/\s+/g,' ').trim()+' ';
+      if(txt.length>3500000)break;
+    }
+    txt=txt.trim();
+    if(!txt){document.getElementById('estatus').textContent='Nepodařilo se extrahovat text.';return;}
+    await loadText(txt,f.name.replace(/\.epub$/i,''));
+    document.getElementById('estatus').textContent='Načteno: '+words.length.toLocaleString('cs-CZ')+' slov';
+  }catch(e){document.getElementById('estatus').textContent='Chyba: '+e.message;}
+}
+
+function orp(w){const i=Math.max(0,Math.floor(w.length*0.28));return w.slice(0,i)+'<span class="orp">'+w[i]+'</span>'+w.slice(i+1);}
+function fmtT(s){if(s<60)return s+'s';const m=Math.floor(s/60),h=Math.floor(m/60);return h>0?h+'h '+(m%60)+'m':m+'m';}
+function posGuide(){const sw=document.getElementById('stage').offsetWidth;document.getElementById('vl').style.left=Math.round(sw/2-46*0.52*5.5)+'px';}
+
+function showWord(){
+  const ch=words.slice(idx,idx+chunkSize);if(!ch.length)return;
+  document.getElementById('wdiv').innerHTML=ch.map((w,i)=>i===0?orp(w):'<span style="margin-left:.35em">'+w+'</span>').join('');
+  const pct=Math.round((idx/Math.max(1,words.length-1))*100);
+  document.getElementById('pb').style.width=pct+'%';
+  document.getElementById('psl').value=pct;
+  document.getElementById('ppct').textContent=pct+'%';
+  document.getElementById('s-r').textContent=fmtT(Math.round((words.length-idx)/wpm*60));
+  document.getElementById('s-c').textContent=(idx+1).toLocaleString('cs-CZ');
+  document.getElementById('s-t').textContent=words.length.toLocaleString('cs-CZ');
+  document.getElementById('s-p').textContent=pct+'%';
+  document.getElementById('s-wpm').textContent=wpm;
+  posGuide();
+  if(Date.now()-lastSave>25000){lastSave=Date.now();savePos();}
+}
+function updBookBar(){
+  document.getElementById('book-bar').style.display='flex';
+  document.getElementById('bname').textContent=bookTitle;
+  document.getElementById('bbadge').textContent=' — '+words.length.toLocaleString('cs-CZ')+' slov';
+}
+function getDelay(w){const b=60000/wpm;if(!w)return b;if(w.match(/[.!?]$/))return b*3;if(w.match(/[,;:]$/))return b*1.7;if(w.length>9)return b*1.3;return b;}
+function step(){if(idx>=words.length-1){stopPlay(true);document.getElementById('pb').style.width='100%';return;}idx+=chunkSize;if(idx>=words.length)idx=words.length-1;showWord();timer=setTimeout(step,getDelay(words[idx]||''));}
+function startPlay(){if(!words.length||idx>=words.length)return;playing=true;document.getElementById('pbtn').textContent='⏸ Pauza';showWord();timer=setTimeout(step,getDelay(words[idx]||''));clearTimeout(sleepTimer);sleepTimer=setTimeout(doSleepCheck,SLEEP_MS);}
+function stopPlay(sh=true){if(!playing)return;playing=false;document.getElementById('pbtn').textContent='▶ Start';clearTimeout(timer);clearTimeout(sleepTimer);savePos();if(sh)addH('pause');}
+function togglePlay(){if(idx>=words.length-1){idx=0;showWord();}playing?stopPlay():startPlay();}
+function doSleepCheck(){
+  if(playing){playing=false;document.getElementById('pbtn').textContent='▶ Start';clearTimeout(timer);}
+  savePos();addH('sleep');
+  document.getElementById('sleep-ov').style.display='flex';
+  let sleepCd=30;
+  document.getElementById('sleep-cd').textContent='Automaticky zavřu za '+sleepCd+' s';
+  clearInterval(sleepCdItv);
+  sleepCdItv=setInterval(()=>{sleepCd--;if(sleepCd<=0){clearInterval(sleepCdItv);closeSleep();}else document.getElementById('sleep-cd').textContent='Automaticky zavřu za '+sleepCd+' s';},1000);
+}
+function closeSleep(){document.getElementById('sleep-ov').style.display='none';clearInterval(sleepCdItv);}
+function confirmRead(){closeSleep();startPlay();}
+function seekW(n){const p=playing;if(p){clearTimeout(timer);clearTimeout(sleepTimer);playing=false;}idx=Math.max(0,Math.min(words.length-1,idx+n));if(words.length)showWord();if(p)startPlay();}
+function seekMin(m){seekW(Math.round(wpm*m));}
+function seekPct(v){if(!words.length)return;const p=playing;if(p){clearTimeout(timer);clearTimeout(sleepTimer);playing=false;}idx=Math.max(0,Math.min(words.length-1,Math.round((v/100)*(words.length-1))));showWord();if(p)startPlay();}
+function goStart(){const p=playing;if(p){clearTimeout(timer);clearTimeout(sleepTimer);playing=false;}idx=0;if(words.length)showWord();if(p)startPlay();}
+function setWpm(v){wpm=Math.max(60,Math.min(900,parseInt(v)));document.getElementById('wlbl').textContent=wpm+' WPM';document.getElementById('wbadge').textContent=wpm+' WPM';document.getElementById('s-wpm').textContent=wpm;document.getElementById('wsl').value=wpm;}
+function adjWpm(d){setWpm(wpm+d);}
+function setChunk(n,el){chunkSize=n;document.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
+function stab(t,btn){document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.sc').forEach(c=>c.classList.remove('on'));btn.classList.add('on');document.getElementById('sc-'+t).classList.add('on');}
+const panelOpen={};
+function tog(id){panelOpen[id]=!panelOpen[id];document.getElementById('bd-'+id).style.display=panelOpen[id]?'block':'none';document.getElementById('arr-'+id).textContent=panelOpen[id]?'▴':'▾';if(id==='hist'&&panelOpen[id])renderHist();}
+async function savePos(){if(!words.length)return;await sSet('rsvp-pos',JSON.stringify({idx,title:bookTitle,wc:words.length,ts:Date.now()}));}
+async function addH(action){if(!words.length)return;const raw=await sGet('rsvp-history');let h=[];try{if(raw)h=JSON.parse(raw);}catch(e){}h.unshift({ts:Date.now(),idx,title:bookTitle,wc:words.length,action});if(h.length>40)h=h.slice(0,40);await sSet('rsvp-history',JSON.stringify(h));}
+async function renderHist(){
+  const raw=await sGet('rsvp-history');let h=[];try{if(raw)h=JSON.parse(raw);}catch(e){}
+  const body=document.getElementById('bd-hist');
+  if(!h.length){body.innerHTML='<div class="hempty">Zatím žádná historie</div>';return;}
+  const amap={pause:'pauza',sleep:'spánek',end:'konec',load:'načteno'};
+  body.innerHTML='<div>'+h.map((e,i)=>{
+    const d=new Date(e.ts);const ds=d.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric',year:'2-digit'});const ts=d.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'});
+    const pct=Math.round((e.idx/Math.max(1,e.wc))*100);
+    return `<div class="hent" onclick="jmpH(${i})"><div style="flex:1;min-width:0"><div class="hdt">${ds} ${ts}<span class="acbadge ${e.action==='sleep'?'sleep-badge':''}">${amap[e.action]||e.action}</span></div><div class="htxt">${e.title}</div></div><span class="hpct">${pct}%</span><button class="hx" onclick="delH(event,${i})">✕</button></div>`;
+  }).join('')+'</div>';
+}
+async function jmpH(i){const raw=await sGet('rsvp-history');try{const h=JSON.parse(raw);const e=h[i];if(e.title!==bookTitle){alert('Položka patří knize "'+e.title+'".\nNačti ji nejdřív.');return;}seekW(e.idx-idx);}catch(err){}}
+async function delH(ev,i){ev.stopPropagation();const raw=await sGet('rsvp-history');try{let h=JSON.parse(raw);h.splice(i,1);await sSet('rsvp-history',JSON.stringify(h));renderHist();}catch(e){}}
+const dz=document.getElementById('dropz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='var(--bg2)'});
+dz.addEventListener('dragleave',()=>dz.style.background='');
+dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='';const f=e.dataTransfer.files[0];if(f&&f.name.toLowerCase().endsWith('.epub')){const dt=new DataTransfer();dt.items.add(f);document.getElementById('finput').files=dt.files;loadEpub(document.getElementById('finput'));}});
+window.addEventListener('resize',posGuide);
+posGuide();
+</script>
+</body>
+</html>
