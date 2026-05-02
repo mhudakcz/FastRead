@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FastRead — RSVP Reader</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#D85A30">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FastRead">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <script>!function(){var t=localStorage.getItem('rsvp-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}()</script>
   <style>
     :root {
       --bg:#ffffff;--bg2:#f7f7f7;--border:#e5e5e5;--border2:#d0d0d0;
@@ -12,10 +20,13 @@
       --radius:10px;--font:system-ui,-apple-system,sans-serif;
     }
     @media(prefers-color-scheme:dark){
-      :root{--bg:#1a1a1a;--bg2:#252525;--border:#333;--border2:#444;--text:#f0f0f0;--text2:#aaa;--text3:#666;}
+      :root:not([data-theme="light"]):not([data-theme="dark"]){--bg:#1a1a1a;--bg2:#252525;--border:#333;--border2:#444;--text:#f0f0f0;--text2:#aaa;--text3:#666;}
     }
+    [data-theme="dark"]{--bg:#1a1a1a;--bg2:#252525;--border:#333;--border2:#444;--text:#f0f0f0;--text2:#aaa;--text3:#666;}
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:var(--font);background:var(--bg);color:var(--text)}
+    #theme-btn{position:fixed;top:12px;right:12px;z-index:20;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:5px 9px;font-size:16px;cursor:pointer;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+    #theme-btn:hover{background:var(--border)}
     #wrap{max-width:680px;margin:0 auto;padding:1rem 1rem 3rem}
     #sleep-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99;align-items:center;justify-content:center}
     .sleep-card{background:var(--bg);border-radius:var(--radius);padding:2rem 1.5rem;text-align:center;border:1px solid var(--border2);max-width:300px;width:90%}
@@ -89,6 +100,7 @@
   </style>
 </head>
 <body>
+<button id="theme-btn" onclick="cycleTheme()" title="Barevný režim">🌓</button>
 <div id="wrap">
   <div id="sleep-ov">
     <div class="sleep-card">
@@ -207,6 +219,19 @@ const storage={
 };
 async function sSet(k,v){await storage.set(k,v);}
 async function sGet(k){const r=await storage.get(k);return r?r.value:null;}
+
+// --- Dark mode ---
+const T_ICONS={auto:'🌓',dark:'🌙',light:'☀️'};
+let curTheme='auto';
+function applyTheme(t){
+  curTheme=t;
+  if(t==='auto')document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('theme-btn').textContent=T_ICONS[t];
+  sSet('rsvp-theme',t);
+}
+function cycleTheme(){const ts=['auto','dark','light'];applyTheme(ts[(ts.indexOf(curTheme)+1)%3]);}
+(async()=>{const t=await sGet('rsvp-theme')||'auto';applyTheme(t);})();
 
 function tokenise(raw){
   let t=raw.replace(/\r\n|\r/g,'\n');
@@ -369,6 +394,10 @@ dz.addEventListener('dragleave',()=>dz.style.background='');
 dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='';const f=e.dataTransfer.files[0];if(f&&f.name.toLowerCase().endsWith('.epub')){const dt=new DataTransfer();dt.items.add(f);document.getElementById('finput').files=dt.files;loadEpub(document.getElementById('finput'));}});
 window.addEventListener('resize',posGuide);
 posGuide();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
