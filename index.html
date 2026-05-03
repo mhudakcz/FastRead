@@ -19,6 +19,7 @@
       --orp:#D85A30;--orp-bg:#FAECE7;--orp-dark:#993C1D;
       --radius:10px;--font:system-ui,-apple-system,sans-serif;
       --bg-btn:#ffffff;--bg-btn-h:#f0f0f0;
+      --fs:42px;
     }
     @media(prefers-color-scheme:dark){
       :root:not([data-theme="light"]):not([data-theme="dark"]){--bg:#1a1a1a;--bg2:#252525;--border:#333;--border2:#555;--text:#f0f0f0;--text2:#aaa;--text3:#666;--bg-btn:#2e2e2e;--bg-btn-h:#3a3a3a;}
@@ -41,7 +42,7 @@
     #bname{font-size:13px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)}
     #bbadge{font-size:11px;color:var(--text3)}
     #stage{min-height:160px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius);background:var(--bg2);border:1px solid var(--border);margin-bottom:1rem;position:relative;overflow:hidden}
-    #wdiv{font-size:clamp(32px,8vw,46px);font-weight:400;letter-spacing:.02em;display:flex;align-items:center;color:var(--text);user-select:none}
+    #wdiv{font-size:var(--fs);font-weight:400;letter-spacing:.02em;display:flex;align-items:center;color:var(--text);user-select:none}
     .orp{color:var(--orp);font-weight:500}
     #vl{position:absolute;width:1px;height:55%;background:var(--border)}
     #pb{position:absolute;bottom:0;left:0;height:2px;background:var(--orp);transition:width .08s}
@@ -170,6 +171,13 @@
         <span class="rl">Přesná rychlost:</span>
         <input type="range" id="wsl" min="60" max="900" step="10" value="250" oninput="setWpm(this.value)" style="flex:1;accent-color:var(--orp)">
         <span class="rv" id="wlbl">250 WPM</span>
+      </div>
+      <div class="row">
+        <span class="rl">Velikost písma:</span>
+        <button class="nbtn" onclick="adjFs(-4)">A−</button>
+        <input type="range" id="fsl" min="24" max="72" step="4" value="42" oninput="setFontSize(this.value)" style="flex:1;accent-color:var(--orp)">
+        <button class="nbtn" onclick="adjFs(4)">A+</button>
+        <span class="rv" id="fs-lbl">42px</span>
       </div>
     </div>
   </div>
@@ -326,7 +334,7 @@ async function loadEpub(inp){
 
 function orp(w){const i=Math.max(0,Math.floor(w.length*0.28));return w.slice(0,i)+'<span class="orp">'+w[i]+'</span>'+w.slice(i+1);}
 function fmtT(s){if(s<60)return s+'s';const m=Math.floor(s/60),h=Math.floor(m/60);return h>0?h+'h '+(m%60)+'m':m+'m';}
-function posGuide(){const sw=document.getElementById('stage').offsetWidth;document.getElementById('vl').style.left=Math.round(sw/2-46*0.52*5.5)+'px';}
+function posGuide(){const sw=document.getElementById('stage').offsetWidth;document.getElementById('vl').style.left=Math.round(sw/2-fontSize*0.52*5.5)+'px';}
 
 function showWord(){
   const ch=words.slice(idx,idx+chunkSize);if(!ch.length)return;
@@ -370,6 +378,10 @@ function seekPct(v){if(!words.length)return;const p=playing;if(p){clearTimeout(t
 function goStart(){const p=playing;if(p){clearTimeout(timer);clearTimeout(sleepTimer);playing=false;}idx=0;if(words.length)showWord();if(p)startPlay();}
 function setWpm(v){wpm=Math.max(60,Math.min(900,parseInt(v)));document.getElementById('wlbl').textContent=wpm+' WPM';document.getElementById('wbadge').textContent=wpm+' WPM';document.getElementById('s-wpm').textContent=wpm;document.getElementById('wsl').value=wpm;}
 function adjWpm(d){setWpm(wpm+d);}
+let fontSize=42;
+function setFontSize(v){fontSize=Math.max(24,Math.min(72,parseInt(v)));document.documentElement.style.setProperty('--fs',fontSize+'px');document.getElementById('fs-lbl').textContent=fontSize+'px';document.getElementById('fsl').value=fontSize;sSet('rsvp-fs',fontSize);posGuide();}
+function adjFs(d){setFontSize(fontSize+d);}
+(async()=>{const s=await sGet('rsvp-fs');if(s)setFontSize(parseInt(s));})();
 function setChunk(n,el){chunkSize=n;document.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('on'));el.classList.add('on');}
 function stab(t,btn){document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.sc').forEach(c=>c.classList.remove('on'));btn.classList.add('on');document.getElementById('sc-'+t).classList.add('on');}
 const panelOpen={};
